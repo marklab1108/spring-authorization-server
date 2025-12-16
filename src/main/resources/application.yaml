@@ -1,0 +1,43 @@
+server:
+  port: 9000
+
+spring:
+  application:
+    name: spring-authorization-server
+  
+  # PostgreSQL Database Configuration
+  datasource:
+    url: jdbc:postgresql://127.0.0.1:5432/authserver
+    driver-class-name: org.postgresql.Driver
+    username: postgres
+    password: dj/4ej03
+    hikari:
+      schema: poc_spring_authorization_server
+  
+  # JPA Configuration
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: none
+      default_schema: poc_spring_authorization_server
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          lob:
+            non_contextual_creation: true
+  
+  # SQL Initialization (disabled - use external DDL/DML scripts)
+  sql:
+    init:
+      mode: never
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    org.springframework.security: DEBUG
+    org.springframework.security.oauth2: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE

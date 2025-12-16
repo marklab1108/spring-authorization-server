@@ -1,0 +1,169 @@
+{
+  "info": {
+    "name": "Spring Authorization Server - OAuth2 Client Credentials",
+    "description": "Collection for testing OAuth2 Client Credentials Flow",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Get Authorization Server Metadata",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:9000/.well-known/oauth-authorization-server",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "9000",
+          "path": [".well-known", "oauth-authorization-server"]
+        },
+        "description": "獲取授權伺服器的元數據資訊"
+      }
+    },
+    {
+      "name": "2. Get JWKS (Public Keys)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:9000/oauth2/jwks",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "9000",
+          "path": ["oauth2", "jwks"]
+        },
+        "description": "獲取用於驗證 JWT 的公鑰"
+      }
+    },
+    {
+      "name": "3. Get Access Token (messaging-client)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// 將 access token 儲存到環境變數",
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.environment.set('access_token', jsonData.access_token);",
+              "    console.log('Access Token: ' + jsonData.access_token);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "password",
+              "value": "secret",
+              "type": "string"
+            },
+            {
+              "key": "username",
+              "value": "messaging-client",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "grant_type",
+              "value": "client_credentials",
+              "type": "text"
+            },
+            {
+              "key": "scope",
+              "value": "message.read message.write",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "http://localhost:9000/oauth2/token",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "9000",
+          "path": ["oauth2", "token"]
+        },
+        "description": "使用 Client Credentials Flow 獲取 Access Token"
+      }
+    },
+    {
+      "name": "4. Get Access Token (api-client)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.environment.set('access_token', jsonData.access_token);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "password",
+              "value": "api-secret",
+              "type": "string"
+            },
+            {
+              "key": "username",
+              "value": "api-client",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "grant_type",
+              "value": "client_credentials",
+              "type": "text"
+            },
+            {
+              "key": "scope",
+              "value": "api.read api.write",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "http://localhost:9000/oauth2/token",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "9000",
+          "path": ["oauth2", "token"]
+        },
+        "description": "使用另一個 client 獲取 Access Token"
+      }
+    }
+  ]
+}

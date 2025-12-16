@@ -1,0 +1,9 @@
+# OAuth2 和 HTTP 請求
+requests>=2.31.0
+
+# JWT 處理和驗證
+PyJWT[crypto]>=2.8.0
+
+# 加密相關
+cryptography>=41.0.0
+
