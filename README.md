@@ -1,320 +1,370 @@
-# Spring Authorization Server - OAuth2 Client Credentials Flow
+# Spring Authorization Server POC
 
-這是一個完整的 Spring Authorization Server 實作，支援 OAuth2 Client Credentials Flow 和 JWKS endpoint。
-
-## 功能特性
-
-- ✅ OAuth2 Client Credentials Flow 支援
-- ✅ JWKS (JSON Web Key Set) Endpoint
-- ✅ PostgreSQL 資料庫（生產環境就緒）
-- ✅ 資料庫 Schema 和初始資料
-- ✅ JWT Token 簽發
-- ✅ Schema 隔離設計
+這是一個 Spring Authorization Server 的 POC，支援：
+- OAuth2 `client_credentials`
+- OAuth2 `authorization_code`（整合外部認證 + 自訂授權條款頁 `/terms`）
 
 ## 技術棧
-
-- Spring Boot 4.0.0
-- Spring Security OAuth2 Authorization Server
-- Spring Data JPA
-- PostgreSQL 資料庫
-- Java 21
+| 技術 | 版本 |
+|------|------|
+| Java | 21 |
+| Spring Boot | 3.3.6 |
+| Spring Authorization Server | 由 Spring Boot 管理 |
+| PostgreSQL | 15+ |
+| Thymeleaf | 由 Spring Boot 管理 |
 
 ## 專案結構
-
 ```
-SpringAuthorizationServer/
-├── source/                                               # 外部資源
+spring-authorization-server/
+├── src/main/java/com/example/demo/
+│   ├── DemoApplication.java          # 應用程式入口
+│   ├── config/
+│   │   └── AuthorizationServerConfig.java  # OAuth2 授權伺服器設定
+│   ├── controller/
+│   │   ├── ExternalAuthCallbackController.java  # 外部認證回調處理
+│   │   ├── ExternalLoginController.java         # 外部登入入口
+│   │   └── TermsController.java                 # 授權條款頁
+│   ├── dto/
+│   │   ├── ExternalAuthCallbackDto.java   # 回調資料 DTO
+│   │   ├── ExternalUserInfoRequest.java   # 外部 API 請求
+│   │   └── ExternalUserInfoResponse.java  # 外部 API 回應
+│   ├── entity/
+│   │   └── ConsentHistory.java            # Consent 歷史記錄 Entity
+│   ├── exception/
+│   │   ├── AuthException.java             # 自訂例外
+│   │   └── GlobalExceptionHandler.java    # 全域例外處理
+│   ├── repository/
+│   │   └── ConsentHistoryRepository.java  # Consent 歷史記錄 Repository
+│   └── service/
+│       ├── AuditableConsentService.java   # 每次授權都要同意的 Consent Service
+│       └── ExternalAuthService.java       # 外部認證服務
+├── src/main/resources/
+│   ├── application.yaml                   # 應用程式設定
+│   └── templates/                         # Thymeleaf 模板
+│       ├── auth-home-page.html
+│       ├── error.html
+│       └── terms.html
+├── source/
 │   ├── db/
-│   │   ├── DDL.sql                                      # PostgreSQL DDL
-│   │   ├── DML.sql                                      # PostgreSQL DML
-│   │   └── README.md                                    # DB 設置指南
-│   ├── postman-collection.json                          # Postman 測試
-│   └── test-oauth.sh                                    # 測試腳本
-├── src/
-│   ├── main/
-│   │   ├── java/
-│   │   │   └── com/example/demo/
-│   │   │       ├── DemoApplication.java
-│   │   │       ├── config/
-│   │   │       │   └── AuthorizationServerConfig.java  # OAuth2 配置
-│   │   │       └── controller/
-│   │   │           └── TestController.java             # 測試端點
-│   │   └── resources/
-│   │       └── application.yaml                        # 應用配置
-│   └── test/
-│       └── java/
-│           └── com/example/demo/
-│               └── DemoApplicationTests.java
-├── pom.xml                                              # Maven 依賴
-├── README.md                                            # 專案說明
+│   │   ├── DDL.sql                        # 資料表建立腳本
+│   │   └── DML.sql                        # 測試資料腳本
+│   ├── mock-external-server/              # Mock 外部認證系統
+│   ├── test-ap/                           # Python 測試工具
+│   ├── test-authorization-code-flow.sh   # Authorization Code 測試腳本
+│   ├── test-oauth.sh                      # Client Credentials 測試腳本
+│   └── postman-collection.json            # Postman 集合
+└── pom.xml
 ```
 
-## 快速啟動
-
-### 前置要求
+## 需求與前置
 - Java 21
-- PostgreSQL (運行於 127.0.0.1:5432)
-- 資料庫 `authserver` 已創建
+- PostgreSQL 15+（本機測試用）
+- Maven 3.9+
 
-### Step 1: 設置資料庫
+## 資料庫設定
+### 1) 建立 Schema 與資料表
+- DDL: source/db/DDL.sql
+- DML: source/db/DML.sql
 
-### Step 2: 啟動應用
+### 2) 設定連線
+
+編輯 `src/main/resources/application.yaml`，調整資料庫連線設定：
+
+```yaml
+spring:
+  datasource:
+    url: jdbc:postgresql://127.0.0.1:5432/authserver
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:your-password}
+```
+
+## 啟動方式
+
+### 1) 啟動 Authorization Server
 
 ```bash
-# 編譯專案
 ./mvnw clean package
-
-# 啟動應用
 ./mvnw spring-boot:run
 ```
 
-應用將在 `http://localhost:9000` 啟動
-
-### Step 3: 測試
+### 2) 啟動 Mock External Server
 
 ```bash
-# 使用自動化測試腳本
-cd source
-./test-oauth.sh
+cd source/mock-external-server
+./mvnw spring-boot:run
 ```
 
-## 預設的 OAuth2 Clients
+## 主要端點
 
-資料庫中已預設建立兩個測試用的 OAuth2 clients：
+### Authorization Server（9000）
 
-### Client 1: messaging-client
-- **Client ID**: `messaging-client`
-- **Client Secret**: `secret`
-- **Grant Type**: `client_credentials`
-- **Scopes**: `message.read`, `message.write`
+| 端點 | 說明 |
+|------|------|
+| `GET /oauth2/authorize` | 授權端點 |
+| `POST /oauth2/token` | Token 端點 |
+| `GET /oauth2/jwks` | JWKS 公鑰端點 |
+| `GET /.well-known/oauth-authorization-server` | 授權伺服器 metadata |
+| `GET /.well-known/openid-configuration` | OIDC Discovery |
 
-### Client 2: api-client
-- **Client ID**: `api-client`
-- **Client Secret**: `api-secret`
-- **Grant Type**: `client_credentials`
-- **Scopes**: `api.read`, `api.write`, `api.delete`
+自訂頁面 / 流程端點：
 
-## OAuth2 端點
+| 端點 | 說明 |
+|------|------|
+| `GET /external-login` | 中轉頁（導向外部系統認證） |
+| `GET /oauth2/callback?data=...` | 外部回調入口（Base64 JSON） |
+| `GET /terms` | 授權條款頁（SAS consentPage） |
 
-### 1. Token Endpoint (取得 Access Token)
+### Mock External Server（8888）
+
+| 端點 | 說明 |
+|------|------|
+| `GET /login?session=...&callback_url=...` | 登入頁 |
+| `POST /login` | 提交登入（導回 callback_url） |
+| `GET /test-login?session=...&callback_url=...&customer_id=...` | 免表單快速登入（測試用） |
+| `POST /api/userinfo` | 外部使用者資訊 API |
+| `GET /health` | 健康檢查端點 |
+
+## OAuth2 Flows
+
+### Client Credentials Flow
+
+適用於機器對機器（M2M）的場景，不需要使用者介入。
+
 ```bash
+# 取得 Access Token
 curl -X POST http://localhost:9000/oauth2/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -u messaging-client:secret \
   -d "grant_type=client_credentials&scope=message.read message.write"
 ```
 
-或使用 POST body 傳遞 client credentials：
+或使用測試腳本：
 ```bash
-curl -X POST http://localhost:9000/oauth2/token \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "grant_type=client_credentials" \
-  -d "client_id=messaging-client" \
-  -d "client_secret=secret" \
-  -d "scope=message.read message.write"
-```
-
-回應範例：
-```json
-{
-  "access_token": "eyJraWQiOiI...",
-  "token_type": "Bearer",
-  "expires_in": 3600,
-  "scope": "message.read message.write"
-}
-```
-
-### 2. JWKS Endpoint (取得公鑰)
-```bash
-curl http://localhost:9000/oauth2/jwks
-```
-
-回應範例：
-```json
-{
-  "keys": [
-    {
-      "kty": "RSA",
-      "e": "AQAB",
-      "kid": "...",
-      "n": "..."
-    }
-  ]
-}
-```
-
-### 3. Authorization Server Metadata
-```bash
-curl http://localhost:9000/.well-known/oauth-authorization-server
-```
-
-這個端點會返回所有可用的 OAuth2 端點資訊。
-
-### 4. OpenID Configuration (如需要 OIDC)
-```bash
-curl http://localhost:9000/.well-known/openid-configuration
-```
-
-## 資料庫管理
-
-### 使用 psql 命令行
-
-```bash
-# 連接到資料庫
-psql -h 127.0.0.1 -p 5432 -U postgres -d authserver
-
-# 查看所有表格
-\dt poc_spring_authorization_server.*
-
-# 查看客戶端資料
-SELECT client_id, client_name, scopes 
-FROM poc_spring_authorization_server.oauth2_registered_client;
-```
-
-### 使用 pgAdmin
-可以使用 pgAdmin 圖形介面管理 PostgreSQL 資料庫：
-- Host: 127.0.0.1
-- Port: 5432
-- Database: authserver
-- Username: postgres
-- Password: dj/4ej03
-
-## 驗證 JWT Token
-
-取得 token 後，可以使用 https://jwt.io 來解碼和驗證 token 內容。
-
-Token 範例結構：
-```json
-{
-  "header": {
-    "alg": "RS256",
-    "kid": "..."
-  },
-  "payload": {
-    "sub": "messaging-client",
-    "aud": "messaging-client",
-    "nbf": 1234567890,
-    "scope": ["message.read", "message.write"],
-    "iss": "http://localhost:9000",
-    "exp": 1234571490,
-    "iat": 1234567890
-  }
-}
-```
-
-## 測試端點
-
-專案包含以下測試端點：
-
-### 1. 公開端點 (無需認證)
-```bash
-curl http://localhost:9000/api/public
-```
-
-### 2. 受保護端點 (需要 Token)
-```bash
-curl http://localhost:9000/api/protected \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
-```
-
-### 3. 訊息端點 (需要 Token 和 message.read scope)
-```bash
-curl http://localhost:9000/api/messages \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
-```
-
-## 使用 Access Token 呼叫 API
-
-取得 token 後，可以在 API 請求中使用：
-```bash
-# 範例：呼叫受保護的端點
-curl http://localhost:9000/api/protected \
-  -H "Authorization: Bearer eyJraWQiOiI..."
-```
-
-回應範例：
-```json
-{
-  "message": "This is a protected endpoint",
-  "clientId": "messaging-client",
-  "authorities": [...],
-  "scopes": ["message.read", "message.write"],
-  "timestamp": "1702384800000"
-}
-```
-
-## 開發注意事項
-
-1. **密碼加密**: 目前使用 `{noop}` prefix 儲存明文密碼，生產環境應該使用 bcrypt：
-   ```java
-   PasswordEncoder encoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
-   String encodedSecret = encoder.encode("secret");
-   ```
-
-2. **RSA Key Pair**: 目前在記憶體中動態生成，重啟後會改變。生產環境應該使用持久化的金鑰或從設定檔載入。
-
-3. **Issuer URL**: 在 `AuthorizationServerConfig` 中設定為 `http://localhost:9000`，部署時需要修改為實際的域名。
-
-4. **PostgreSQL 連線**: 
-   - 確保 PostgreSQL 服務正在運行
-   - 資料庫連線資訊在 `application.yaml` 中配置
-   - Schema 使用 `poc_spring_authorization_server` 進行隔離
-
-## 資料庫 Schema
-
-詳細的資料庫結構請參考：
-- `source/db/DDL.sql` - PostgreSQL 表格定義
-- `source/db/DML.sql` - 預設的測試資料
-- `source/db/README.md` - 完整的資料庫設置指南
-
-主要資料表（位於 schema: `poc_spring_authorization_server`）：
-- `oauth2_registered_client` - OAuth2 客戶端資訊
-- `oauth2_authorization` - 授權資訊（包含 tokens）
-- `oauth2_authorization_consent` - 授權同意資訊
-
-## 測試流程
-
-### 方法 1: 使用自動化測試腳本 (推薦)
-
-執行提供的測試腳本：
-```bash
+cd source
 ./test-oauth.sh
 ```
 
-這個腳本會自動測試所有主要功能：
-- 獲取授權伺服器元數據
-- 獲取 JWKS 公鑰
-- 使用 Client Credentials Flow 獲取 Access Token
-- 使用 Token 呼叫受保護的 API
-- 測試無 Token 的存取（預期失敗）
+### Authorization Code Flow（外部認證 + 條款頁）
 
-### 方法 2: 使用 Postman
+整體流程（重點：授權碼由 Spring Authorization Server 簽發，不手工產生）：
 
-1. 匯入 `postman-collection.json` 到 Postman
-2. 建立一個新的 Environment
-3. 按照順序執行 collection 中的請求
-4. Access Token 會自動儲存到環境變數中
+1. Client 發起授權請求到 `GET /oauth2/authorize?...`
+2. 若使用者尚未登入，Spring Security 會導向 `GET /external-login`（從 SavedRequest 取回原始授權請求資訊）
+3. 使用者在 `/external-login` 點擊按鈕 → 導向 Mock External Server `/login`
+4. 外部系統認證成功後導回 `GET /oauth2/callback?data=...`
+   - `data` 為 Base64(JSON)：`{statusCode,statusDesc,session,token}`
+   - Authorization Server 驗證 `statusCode=="0000"`、session 一致性後，再呼叫外部 API `/api/userinfo` 取得 `customerId`
+   - 成功後寫入 `SecurityContext`（等同完成登入）
+5. 使用者被導回原始的 `/oauth2/authorize`，Spring Authorization Server 進入 consentPage `/terms`
+6. 使用者同意條款後，表單 POST 回 `/oauth2/authorize`，由 Spring Authorization Server 簽發 `authorization_code` 並 redirect 回 client `redirect_uri`
+7. Client 使用 `authorization_code` 交換 token：`POST /oauth2/token`
 
-### 方法 3: 手動測試
+```
+┌──────────┐     ┌─────────────┐     ┌─────────────┐     ┌──────────────┐
+│  Client  │     │ Auth Server │     │ Mock Server │     │    User      │
+└────┬─────┘     └──────┬──────┘     └──────┬──────┘     └──────┬───────┘
+     │                  │                   │                   │
+     │ 1. /oauth2/authorize                 │                   │
+     │─────────────────>│                   │                   │
+     │                  │                   │                   │
+     │                  │ 2. Redirect /external-login           │
+     │                  │───────────────────────────────────────>
+     │                  │                   │                   │
+     │                  │                   │  3. Click login   │
+     │                  │                   │<──────────────────│
+     │                  │                   │                   │
+     │                  │ 4. Redirect /login (Mock)             │
+     │                  │<─────────────────>│<─────────────────>│
+     │                  │                   │                   │
+     │                  │ 5. /oauth2/callback?data=...          │
+     │                  │<──────────────────│                   │
+     │                  │                   │                   │
+     │                  │ 6. Call /api/userinfo                 │
+     │                  │──────────────────>│                   │
+     │                  │<──────────────────│                   │
+     │                  │                   │                   │
+     │                  │ 7. Redirect /terms                    │
+     │                  │───────────────────────────────────────>
+     │                  │                   │                   │
+     │                  │                   │  8. Agree terms   │
+     │                  │<──────────────────────────────────────│
+     │                  │                   │                   │
+     │ 9. Redirect with code                │                   │
+     │<─────────────────│                   │                   │
+     │                  │                   │                   │
+     │ 10. POST /oauth2/token               │                   │
+     │─────────────────>│                   │                   │
+     │<─────────────────│                   │                   │
+     │  (access_token)  │                   │                   │
+```
 
-1. 啟動應用
-2. 使用 curl 或 Postman 取得 access token
-3. 驗證 token 格式和內容
-4. 檢查 JWKS endpoint 是否正常運作
-5. 使用 H2 console 檢查資料庫內容
+## 測試
 
-## 故障排除
+### 自動化腳本（推薦）
 
-如遇到問題，可以：
-1. 查看日誌輸出 (已啟用 Security 的 DEBUG 日誌)
-2. 訪問 H2 控制台檢查資料
-3. 確認 client credentials 是否正確
-4. 驗證請求的 scope 是否存在
+```bash
+cd source
+./test-authorization-code-flow.sh
+```
 
-## 擴展功能
+### 手動測試
 
-如需支援其他 OAuth2 flows，可以在 `data.sql` 中修改 client 的 `authorization_grant_types`：
-- `authorization_code` - 授權碼模式
-- `refresh_token` - Refresh Token
-- `password` - 密碼模式 (不建議)
-- `client_credentials` - 客戶端憑證模式 (已支援)
+1. 打開：
+   `http://localhost:9000/oauth2/authorize?response_type=code&client_id=client-web&redirect_uri=http://localhost:8080/callback&scope=profile%20email&state=xyz123`
+2. 依序完成 `/external-login` → 外部登入 → `/terms` 同意條款
+3. 以授權碼交換 token：
+
+```bash
+curl -X POST http://localhost:9000/oauth2/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -u client-web:web-secret \
+  -d "grant_type=authorization_code" \
+  -d "code=YOUR_AUTHORIZATION_CODE" \
+  -d "redirect_uri=http://localhost:8080/callback"
+```
+
+### Python 測試工具
+
+```bash
+cd source/test-ap
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python test_oauth.py
+```
+
+### Postman Collection
+
+匯入 `source/postman-collection.json` 至 Postman 進行 API 測試。
+
+## 設定
+
+本專案使用 `external-auth.*` 設定外部系統位置（定義在 `application.yaml`）：
+
+```yaml
+external-auth:
+  server-url: http://localhost:8888
+  login-endpoint: /login
+  api-endpoint: /api/userinfo
+  platform-id: authserver
+  connect-timeout-ms: 5000
+  read-timeout-ms: 5000
+
+authorization-server:
+  issuer: http://localhost:9000
+```
+
+對應環境變數（Spring Boot relaxed binding）：
+
+| 環境變數 | 說明 |
+|----------|------|
+| `EXTERNAL_AUTH_SERVER_URL` | 外部認證系統 URL |
+| `EXTERNAL_AUTH_LOGIN_ENDPOINT` | 登入端點路徑 |
+| `EXTERNAL_AUTH_API_ENDPOINT` | 使用者資訊 API 路徑 |
+| `EXTERNAL_AUTH_PLATFORM_ID` | 平台識別碼 |
+| `EXTERNAL_AUTH_CONNECT_TIMEOUT_MS` | 連線逾時（毫秒） |
+| `EXTERNAL_AUTH_READ_TIMEOUT_MS` | 讀取逾時（毫秒） |
+| `AUTHORIZATION_SERVER_ISSUER` | OAuth2 Issuer URL |
+
+## 測試用 OAuth2 Clients（DB 預置）
+
+僅供本機/POC 測試：
+
+| Client ID | Secret | Grant Types | 說明 |
+|-----------|--------|-------------|------|
+| `messaging-client` | `secret` | `client_credentials` | 訊息服務 |
+| `api-client` | `api-secret` | `client_credentials` | API 服務 |
+| `client-web` | `web-secret` | `authorization_code`, `refresh_token` | Web 應用程式 |
+
+> ⚠️ **注意**：測試用密碼使用 `{noop}` 前綴（明文），生產環境請使用 BCrypt 編碼：
+> ```java
+> String encoded = new BCryptPasswordEncoder().encode("your-secret");
+> // 結果如：{bcrypt}$2a$10$...
+> ```
+
+## 授權同意機制（Consent）
+
+### 設計特點
+
+本專案實作了**每次授權都要同意條款**的機制：
+
+- 使用 `authorization_code` flow 的 client，每次授權都會顯示條款頁
+- 每次同意都會記錄到 `oauth2_consent_history` 表，供審計使用
+- 不使用 Spring SAS 原生的 consent 記憶機制
+
+### Consent 歷史記錄
+
+| 欄位 | 說明 |
+|------|------|
+| `id` | 自動遞增主鍵 |
+| `registered_client_id` | OAuth2 Client 內部 ID |
+| `principal_name` | 用戶識別碼（customerId） |
+| `scopes` | 授權的 scopes |
+| `consent_time` | 同意時間 |
+
+### 定期清理
+
+建議定期清理超過 1 年的歷史記錄。可使用以下方式：
+
+**方式 1：PostgreSQL pg_cron**
+```sql
+-- 每天凌晨 3 點執行清理
+SELECT cron.schedule('0 3 * * *', $$
+    DELETE FROM poc_spring_authorization_server.oauth2_consent_history 
+    WHERE consent_time < NOW() - INTERVAL '1 year'
+$$);
+```
+
+**方式 2：Spring @Scheduled**
+
+在應用程式中加入定時任務：
+```java
+@Scheduled(cron = "0 0 3 * * ?")
+@Transactional
+public void cleanupOldConsentHistory() {
+    Instant cutoff = Instant.now().minus(365, ChronoUnit.DAYS);
+    consentHistoryRepository.deleteByConsentTimeBefore(cutoff);
+}
+```
+
+**方式 3：外部 Cron Job**
+```bash
+# crontab -e
+0 3 * * * psql -U postgres -d authserver -c "DELETE FROM poc_spring_authorization_server.oauth2_consent_history WHERE consent_time < NOW() - INTERVAL '1 year';"
+```
+
+## 已知限制與未來規劃
+
+### 目前限制
+
+| 項目 | 說明 | 規劃 |
+|------|------|------|
+| RSA 金鑰 | 每次啟動重新生成，重啟後已發出的 JWT 失效 | Phase 2: 持久化至 KeyStore |
+| PKCE | 目前未啟用 | Phase 2: 啟用 PKCE 支援 |
+| Token 撤銷 | 未實作 Token Revocation | Phase 3 |
+| 多實例部署 | 需共享金鑰與 Session | Phase 3: Redis Session Store |
+
+### 安全性注意事項
+
+- 本 POC 的資料庫密碼、Client Secret 等敏感資訊請勿直接 commit
+- 生產環境請使用環境變數或 Secret Manager
+
+## 問題排除
+
+### 常見問題
+
+**Q: 啟動時出現 `Failed to configure a DataSource`**
+A: 確認 PostgreSQL 是否啟動，以及 `application.yaml` 中的連線設定是否正確。
+
+**Q: 授權流程中出現 `找不到授權請求`**
+A: Session 可能已過期，請重新發起授權流程。
+
+**Q: 外部認證後無法回到條款頁**
+A: 確認 Mock External Server 是否正常運行（port 8888）。
+
+**Q: Token 驗證失敗**
+A: 若服務重啟過，RSA 金鑰會重新生成，舊 Token 會失效。
+
+## License
+
+MIT License

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>使用者認證 - Authorization Server</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #3a7bd5 0%, #00d2ff 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 520px;
+            width: 100%;
+            padding: 50px 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .header .subtitle {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 40px;
+        }
+
+        .client-info {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border-left: 4px solid #3a7bd5;
+        }
+
+        .client-info .label {
+            color: #666;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .client-info .value {
+            color: #333;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .description {
+            color: #666;
+            font-size: 15px;
+            line-height: 1.8;
+            margin-bottom: 35px;
+        }
+
+        .auth-button {
+            display: inline-block;
+            width: 100%;
+            padding: 18px 40px;
+            background: linear-gradient(135deg, #3a7bd5 0%, #00d2ff 100%);
+            color: white;
+            text-decoration: none;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(58, 123, 213, 0.4);
+        }
+
+        .auth-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(58, 123, 213, 0.5);
+        }
+
+        .auth-button:active {
+            transform: translateY(-1px);
+        }
+
+        .security-notice {
+            margin-top: 30px;
+            padding-top: 25px;
+            border-top: 1px solid #e0e0e0;
+            color: #999;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .footer {
+            margin-top: 20px;
+            color: #999;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>使用者認證</h1>
+        <p class="subtitle">User Authentication Required</p>
+    </div>
+
+    <div class="client-info">
+        <div class="label">請求授權的應用程式</div>
+        <div class="value" th:text="${clientName} ?: '未知應用程式'">Application Name</div>
+    </div>
+
+    <div class="description">
+        <p>此應用程式正在請求存取您的帳號。</p>
+        <p>為了繼續，請先完成外部系統的身分驗證。</p>
+    </div>
+
+    <a th:href="${externalLoginUrl}" class="auth-button">前往外部系統認證</a>
+
+    <div class="security-notice">
+        <p>您將被導向至外部認證系統，完成後會自動返回本站。</p>
+    </div>
+
+    <div class="footer">
+        <p>Powered by Spring Authorization Server</p>
+    </div>
+</div>
+</body>
+</html>

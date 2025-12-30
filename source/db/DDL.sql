@@ -61,10 +61,44 @@ CREATE TABLE IF NOT EXISTS poc_spring_authorization_server.oauth2_authorization 
     PRIMARY KEY (id)
 );
 
--- OAuth2 Authorization Consent table
+-- OAuth2 Authorization Consent table (Spring SAS 原生表，本專案不使用)
+-- 保留此表以相容 Spring SAS，但實際 consent 記錄存於 oauth2_consent_history
 CREATE TABLE IF NOT EXISTS poc_spring_authorization_server.oauth2_authorization_consent (
     registered_client_id VARCHAR(100) NOT NULL,
     principal_name VARCHAR(200) NOT NULL,
     authorities VARCHAR(1000) NOT NULL,
     PRIMARY KEY (registered_client_id, principal_name)
 );
+
+-- ============================================================================
+-- OAuth2 Consent History table (自訂：每次授權同意的軌跡記錄)
+-- ============================================================================
+-- 用途：記錄每次用戶同意授權的歷史，用於審計與合規
+-- 特性：
+--   1. 每次同意都會新增一筆記錄（不會覆蓋）
+--   2. 確保每次授權都要重新同意條款
+--   3. 建議定期清理超過 1 年的記錄
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS poc_spring_authorization_server.oauth2_consent_history (
+    id                    BIGSERIAL PRIMARY KEY,
+    registered_client_id  VARCHAR(100) NOT NULL,
+    principal_name        VARCHAR(200) NOT NULL,
+    scopes                VARCHAR(1000) NOT NULL,
+    consent_time          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 索引：加速查詢
+CREATE INDEX IF NOT EXISTS idx_consent_history_principal 
+    ON poc_spring_authorization_server.oauth2_consent_history (principal_name);
+
+CREATE INDEX IF NOT EXISTS idx_consent_history_client 
+    ON poc_spring_authorization_server.oauth2_consent_history (registered_client_id);
+
+CREATE INDEX IF NOT EXISTS idx_consent_history_time 
+    ON poc_spring_authorization_server.oauth2_consent_history (consent_time);
+
+-- ============================================================================
+-- 定期清理範例（PostgreSQL pg_cron 或外部排程執行）
+-- ============================================================================
+-- DELETE FROM poc_spring_authorization_server.oauth2_consent_history 
+-- WHERE consent_time < NOW() - INTERVAL '1 year';

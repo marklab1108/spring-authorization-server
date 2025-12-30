@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>授權條款 - Authorization Server</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 700px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .header .subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .user-info {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+        }
+
+        .user-info-item {
+            flex: 1;
+        }
+
+        .user-info-item .label {
+            color: #666;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .user-info-item .value {
+            color: #333;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .divider {
+            width: 1px;
+            background: #ddd;
+            margin: 0 20px;
+        }
+
+        .terms-box {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            max-height: 350px;
+            overflow-y: auto;
+        }
+
+        .terms-box h2 {
+            color: #333;
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+
+        .terms-box h3 {
+            color: #555;
+            font-size: 16px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        .terms-box p {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.8;
+            margin-bottom: 12px;
+        }
+
+        .terms-box ul {
+            margin-left: 20px;
+            margin-bottom: 12px;
+        }
+
+        .terms-box li {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.8;
+            margin-bottom: 8px;
+        }
+
+        .checkbox-group {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 15px;
+            color: #333;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+            cursor: pointer;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 16px 30px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #666;
+            border: 2px solid #e0e0e0;
+        }
+
+        .btn-secondary:hover {
+            background: #e9ecef;
+            border-color: #ccc;
+        }
+
+        .security-badge {
+            text-align: center;
+            padding: 20px 0;
+            color: #999;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>授權條款</h1>
+        <p class="subtitle">Terms and Conditions</p>
+    </div>
+
+    <div class="content">
+        <div class="user-info">
+            <div class="user-info-item">
+                <div class="label">應用程式</div>
+                <div class="value" th:text="${clientName} ?: '未知'">Application</div>
+            </div>
+            <div class="divider"></div>
+            <div class="user-info-item">
+                <div class="label">使用者</div>
+                <div class="value" th:text="${customerId} ?: '未知'">User ID</div>
+            </div>
+        </div>
+
+        <div class="terms-box">
+            <h2>服務條款與隱私權政策</h2>
+
+            <h3>1. 授權範圍</h3>
+            <p>當您同意此授權時，應用程式將取得下列權限：</p>
+            <ul>
+                <li>讀取您的基本帳號資訊</li>
+                <li>存取您所授權的資源範圍</li>
+                <li>在授權有效期間內代表您執行操作</li>
+            </ul>
+
+            <h3>2. 資料使用</h3>
+            <p>您的個人資料將用於：</p>
+            <ul>
+                <li>驗證您的身分</li>
+                <li>提供個人化服務</li>
+                <li>改善服務品質</li>
+            </ul>
+
+            <h3>3. 資料保護</h3>
+            <p>我們承諾：</p>
+            <ul>
+                <li>不會將您的資料提供給第三方（除非法規要求）</li>
+                <li>採取適當的安全措施保護您的資料</li>
+                <li>您可以隨時撤銷授權</li>
+            </ul>
+        </div>
+
+        <form th:action="@{/oauth2/authorize}" method="post">
+            <input type="hidden" name="client_id" th:value="${clientId}"/>
+            <input type="hidden" name="state" th:value="${state}"/>
+            <div th:each="s : ${scopes}">
+                <input type="hidden" name="scope" th:value="${s}"/>
+            </div>
+
+            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+            <div class="checkbox-group">
+                <label>
+                    <input type="checkbox" id="agreeCheckbox" required>
+                    <span>我已閱讀並同意上述服務條款與隱私權政策</span>
+                </label>
+            </div>
+
+            <div class="button-group">
+                <button type="button" class="btn btn-secondary" onclick="history.back()">
+                    拒絕
+                </button>
+                <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
+                    同意並繼續
+                </button>
+            </div>
+        </form>
+
+        <div class="security-badge">
+            <p>此連線使用安全加密傳輸</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('agreeCheckbox').addEventListener('change', function () {
+        document.getElementById('submitBtn').disabled = !this.checked;
+    });
+</script>
+</body>
+</html>

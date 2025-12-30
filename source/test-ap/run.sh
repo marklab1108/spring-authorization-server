@@ -50,19 +50,19 @@ echo ""
 
 # 升級 pip
 echo -e "${BLUE}正在升級 pip...${NC}"
-pip install --upgrade pip -q
+pip3 install --upgrade pip -q
 echo -e "${GREEN}✓${NC} pip 已升級至最新版本"
 echo ""
 
 # 安裝依賴
 echo -e "${BLUE}正在檢查並安裝依賴...${NC}"
-pip install -r requirements.txt -q
+pip3 install -r requirements.txt -q
 echo -e "${GREEN}✓${NC} 所有依賴已安裝"
 echo ""
 
 # 顯示已安裝的套件
 echo -e "${BLUE}已安裝的主要套件:${NC}"
-pip list | grep -E "requests|PyJWT|cryptography"
+pip3 list | grep -E "requests|PyJWT|cryptography"
 echo ""
 
 # 檢查 Authorization Server 是否運行
@@ -87,7 +87,7 @@ echo -e "${BLUE}執行測試腳本${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 
-python test_oauth.py
+python3 test_oauth.py
 
 # 測試結束
 echo ""

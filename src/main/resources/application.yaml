@@ -33,6 +33,19 @@ spring:
     init:
       mode: never
 
+# Authorization Server Configuration
+authorization-server:
+  issuer: ${AUTHORIZATION_SERVER_ISSUER:http://localhost:9000}
+
+# External Authentication System Configuration
+external-auth:
+  server-url: ${EXTERNAL_AUTH_SERVER_URL:http://localhost:8888}
+  login-endpoint: ${EXTERNAL_AUTH_LOGIN_ENDPOINT:/login}
+  api-endpoint: ${EXTERNAL_AUTH_API_ENDPOINT:/api/userinfo}
+  platform-id: ${EXTERNAL_AUTH_PLATFORM_ID:authserver}
+  connect-timeout-ms: ${EXTERNAL_AUTH_CONNECT_TIMEOUT_MS:5000}
+  read-timeout-ms: ${EXTERNAL_AUTH_READ_TIMEOUT_MS:5000}
+
 # Logging Configuration
 logging:
   level:
